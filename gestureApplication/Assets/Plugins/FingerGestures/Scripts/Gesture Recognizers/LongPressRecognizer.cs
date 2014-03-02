@@ -40,8 +40,10 @@ public class LongPressRecognizer : DiscreteGestureRecognizer<LongPressGesture>
         if( touches.Count != RequiredFingerCount )
             return GestureRecognitionState.Failed;
 
-        if( gesture.ElapsedTime >= Duration )
-            return GestureRecognitionState.Recognized;
+        if (gesture.ElapsedTime >= Duration) {
+			Handheld.Vibrate();
+			return GestureRecognitionState.Recognized;
+		}
 
         // check if we moved too far from initial position
         if( touches.GetAverageDistanceFromStart() > ToPixels( MoveTolerance ) )

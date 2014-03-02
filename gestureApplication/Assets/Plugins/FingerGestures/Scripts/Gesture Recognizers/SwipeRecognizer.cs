@@ -68,7 +68,7 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
     /// Minimum speed the finger motion must maintain in order to generate a valid swipe
     /// <seealso cref="DistanceUnit"/>
     /// </summary>
-    public float MinVelocity = 5.0f;    // 5 cm/s
+    public float MinVelocity = 1.0f;    // 5 cm/s
 
     /// <summary>
     /// Amount of tolerance used when determining whether or not the current swipe motion is still moving in a valid direction

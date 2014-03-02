@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -9,13 +9,13 @@ using System.Collections.Generic;
 
 public class gestureScript : gestureBase {
 
-	List<TapGesture> listOfTapGestures = new List<TapGesture>();
-	List<SwipeGesture> listOfSwipeGestures = new List<SwipeGesture>();
 	public LineRenderer lineRendererPrefab;
 	public GameObject fingerDownMarkerPrefab;
 	public GameObject fingerMoveBeginMarkerPrefab;
 	public GameObject fingerMoveEndMarkerPrefab;
 	public GameObject fingerUpMarkerPrefab;
+
+
 
 	class PathRenderer {
 		LineRenderer lineRenderer;
@@ -71,27 +71,74 @@ public class gestureScript : gestureBase {
 	}
 
 	PathRenderer[] paths;
-
-
+	
 	public class GestureObject {
-		int finger;
-		string typeOfGesture;
+		int finger = 0;
+		DiscreteGesture gesture1 = null;
+		DiscreteGesture gesture2 = null;
 
-		public GestureObject( int finger, string type) {
+
+		public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2) {
 			this.finger = finger;
-			this.typeOfGesture = type;
+			this.gesture1 = gesture1;
+			this.gesture2 = gesture2;
 		}
+
+		public GestureObject(int finger) {
+			this.finger = finger;
+		}
+
+		public GestureObject(int finger, DiscreteGesture gesture1) {
+			this.finger = finger;
+			this.gesture1 = gesture1;
+			this.gesture2 = null;
+		}
+
+
+		public void setGesture1(DiscreteGesture gesture1) {
+			this.gesture1 = gesture1;
+		}
+		public void setGesture2(DiscreteGesture gesture2) {
+			this.gesture2 = gesture2;
+		}
+		public DiscreteGesture getGesture1() {
+			return gesture1;
+		}
+		public DiscreteGesture getGesture2() {
+			return gesture2;
+		}
+		public int getFinger() {
+			return finger;
+		}
+
 	}
 
 	class GestureTracker {
 		List<TapGesture> listOfTapGestures = new List<TapGesture>();
 		List<SwipeGesture> listOfSwipeGestures = new List<SwipeGesture>();
+		List<LongPressGesture> listOfPressGestures = new List<LongPressGesture>();
 		List<PathRenderer> listOfPaths = new List<PathRenderer>();
-		List<string> sequentialGestures = new List<string>();
-		List<GestureObject> gestureList = new List<GestureObject>();
+		//List<string> sequentialGestures = new List<string>();
+		List<GestureObject> gestureQueue = new List<GestureObject>();
+		List<GestureObject> gestureSequence = new List<GestureObject>();
 
 		public GestureTracker() {
-			//UpdateLines();
+
+		}
+
+		public void printOutCurrentPath() {
+			Debug.Log ("Start of Path");
+			foreach (GestureObject gest in gestureSequence) {
+				int finger = gest.getFinger();
+				GestureRecognizer g1 = gest.getGesture1().Recognizer;
+				if (gest.getGesture2() == null){
+					Debug.Log (" Finger: " + finger + ", Gesture 1: " + g1);
+				} 
+				else {
+					GestureRecognizer g2 = gest.getGesture2().Recognizer;
+					Debug.Log (" Finger: " + finger + ", Gesture 1: " + g1 + ", Gesture 2: " + g2);
+				}
+			}
 		}
 
 		//T: tap
@@ -101,92 +148,85 @@ public class gestureScript : gestureBase {
 		//UT: swipe up, tap
 		//U: swipe up
 		//D: swipe down
+
+		//vibrations after long press Handheld.Vibrate();
+		//then long press + swipe up or down COMPOUND GESTURES
+		//modify existing code or creating modified existing code combining two together 
+		//reservation queue if multiple fingers
 		public void updateList(TapGesture tap) {
-			if (sequentialGestures.Count >= 1) {
-				string lastGesture = sequentialGestures [sequentialGestures.Count - 1];
-				TapGesture lastTap; SwipeGesture lastSwipe;
-				if (listOfTapGestures.Count > 1 && lastGesture == "tap") {
-					lastTap = listOfTapGestures [listOfTapGestures.Count - 1];
-						//just tap
-					addGesture(1, "T"); //this is adding the previous tap to the gesture object
-					Debug.Log ("added tap gesture with finger: " + lastTap.Fingers [0].Index);
-				}
-				if (listOfSwipeGestures.Count > 1 && lastGesture == "swipe") {
-						lastSwipe = listOfSwipeGestures [listOfSwipeGestures.Count - 1];
-						float time = lastSwipe.StartTime + lastSwipe.ElapsedTime;
-						Debug.Log("last time: " + time + "start: " + tap.StartTime);
-						if (Mathf.Abs (time - tap.StartTime) <= 0.3f) {
-							if (lastSwipe.Direction == FingerGestures.SwipeDirection.Down) {
-								//tap, down
-								addGesture(1, "DT");
-								Debug.Log ("added down-tap gesture");
-							} 
-							else if (lastSwipe.Direction == FingerGestures.SwipeDirection.Up) {
-								//tap, up
-								addGesture(1, "UT");
-								Debug.Log ("added up-tap gesture");
-							}
-					}
-				}
-			}
+			addGesture(tap.Fingers[0].Index, tap); //this is adding the previous tap to the gesture object
 			listOfTapGestures.Add (tap);
-			sequentialGestures.Add ("tap");
-			Debug.Log ("added tap");
+
 		}
 
 		public void updateList(PathRenderer path) {
 			listOfPaths.Add (path);
 		}
 
+		public void updateList(LongPressGesture press) {
+			addGesture (press.Fingers [0].Index, press);
+			listOfPressGestures.Add (press);
+		}
+
 		public void updateList(SwipeGesture swipe) {
-			if (sequentialGestures.Count >= 1) {
-				string lastGesture = sequentialGestures [sequentialGestures.Count - 1];
-				TapGesture lastTap; SwipeGesture lastSwipe;
-				if (listOfTapGestures.Count > 1 && lastGesture == "swipe") {
-					lastSwipe = listOfSwipeGestures [listOfSwipeGestures.Count - 1];
-					//this is adding the previous swipe to the gesture object
-					if (lastSwipe.Direction == FingerGestures.SwipeDirection.Down) {
-						addGesture(1, "D"); //this is adding the previous tap to the gesture object
-						Debug.Log ("added down gesture with finger: " + lastSwipe.Fingers [0].Index);
-					}
-					else if (lastSwipe.Direction == FingerGestures.SwipeDirection.Up){
-						addGesture(1, "U"); //this is adding the previous tap to the gesture object
-						Debug.Log ("added up gesture with finger: " + lastSwipe.Fingers [0].Index );
-					}
+			addGesture (swipe.Fingers [0].Index, swipe);
+			listOfSwipeGestures.Add (swipe);
+		}
+
+		public void addGesture(int finger, DiscreteGesture type) {
+			bool gestureStarted = false;
+			int gestIndex = 0;
+			foreach (GestureObject gest in gestureQueue) {
+				if (gest.getFinger () == finger) {
+					gestIndex = gestureQueue.IndexOf(gest);
+					gestureStarted = true;
+				}
+			}
+			if (gestureStarted == true){     
+				DiscreteGesture firstGesture = gestureQueue[gestIndex].getGesture1 ();
+				TapGesture t = new TapGesture();
+				if ((firstGesture.Recognizer == type.Recognizer || type.ToString() == "TapGesture" || firstGesture.ToString() == "TapGesture")) {
+					GestureObject g = gestureQueue[gestIndex];
+					gestureSequence.Add (g);
+					gestureQueue.Remove(g);
+					GestureObject newg = new GestureObject(finger, type);
+					gestureQueue.Add(newg);
 				} 
-				if (listOfTapGestures.Count > 1 && lastGesture == "tap") {
-					lastTap = listOfTapGestures [listOfTapGestures.Count - 1];
-					float time = lastTap.StartTime + lastTap.ElapsedTime;
-					Debug.Log("last time: " + time + "start: " + swipe.StartTime);
-					if (Mathf.Abs (time - swipe.StartTime) <= 0.3f) {
-						if (swipe.Direction == FingerGestures.SwipeDirection.Down) {
-							//tap, down
-							addGesture(1, "TD");
-							Debug.Log ("added tap-down gesture");
-						} 
-						else if (swipe.Direction == FingerGestures.SwipeDirection.Up) {
-							//tap, up
-							addGesture(1, "TU");
-							//swipe.Fingers [0].Index
-							Debug.Log ("added tap-up gesture");
+				else {
+
+					float time = firstGesture.StartTime - firstGesture.ElapsedTime;
+					float distance;
+					if (firstGesture.ToString() == "SwipeGesture"){
+						distance = Mathf.Sqrt (Mathf.Pow (firstGesture.Position.x - type.Position.x, 2) + Mathf.Pow (firstGesture.Position.y - type.Position.y, 2));
+					}
+					else {
+						distance = Mathf.Sqrt (Mathf.Pow (firstGesture.Position.x - type.StartPosition.x, 2) + Mathf.Pow (firstGesture.Position.y - type.StartPosition.y, 2));
+					}
+					if (Mathf.Abs (time - type.StartTime) <= 10.0f && distance <= 3.0f) {
+						gestureQueue[gestIndex].setGesture2 (type);
+					} 
+					else {
+						GestureObject g = gestureQueue[gestIndex];
+						gestureSequence.Add (g);
+						gestureQueue.Remove(g);
+						GestureObject newg = new GestureObject(finger, type);
+						gestureQueue.Add(newg);
 						}
 					}
 				}
+			else {
+				GestureObject gesture = new GestureObject (finger, type);
+				gestureQueue.Add(gesture);
 			}
-			listOfSwipeGestures.Add (swipe);
-			sequentialGestures.Add ("swipe");
+			//return gestureQueue;
 		}
-
-		public void addGesture(int finger, string type) {
-			GestureObject gesture = new GestureObject (finger, type);
-			gestureList.Add (gesture);
-		}
+	
 	}
-
 	GestureTracker gestureTracker = new GestureTracker();
 
 	// Use this for initialization
 	void Start () {
+
 	}
 	
 	// Update is called once per frame
@@ -200,10 +240,10 @@ public class gestureScript : gestureBase {
 
 	void OnTap( TapGesture gesture ) {
 		UI.StatusText = "Tapped with finger " + gesture.Fingers[0] + " at: " + gesture.Position;
-		Debug.Log( "Tap gesture detected at " + gesture.Position + 
-		          ". It was sent by " + gesture.Recognizer.name );
-		Debug.Log (listOfTapGestures);
+		//Debug.Log( "Tap gesture detected at " + gesture.Position + 
+		         // ". It was sent by " + gesture.Recognizer.name );
 		gestureTracker.updateList (gesture);
+		gestureTracker.printOutCurrentPath();
 	}
 
 	//The limits are the one imposed by the platform/device you run the app on.  
@@ -220,9 +260,19 @@ public class gestureScript : gestureBase {
 		UI.StatusText = "Swiped " + direction + " with finger " + gesture.Fingers[0] +
 			" (velocity:" + velocity + ", distance: " + gesture.Move.magnitude + " )";
 
-		Debug.Log (UI.StatusText);
+		//Debug.Log (UI.StatusText);
 		gestureTracker.updateList (gesture);
+		gestureTracker.printOutCurrentPath();
+
 	}
+
+
+	void OnLongPress(LongPressGesture gesture) {
+		gestureTracker.updateList (gesture);
+		gestureTracker.printOutCurrentPath();
+	}
+
+
 
 	void OnFingerDown( FingerDownEvent e ) {
 		PathRenderer path = paths[e.Finger.Index];
