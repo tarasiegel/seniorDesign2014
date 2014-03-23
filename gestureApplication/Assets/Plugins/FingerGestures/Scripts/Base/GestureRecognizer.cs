@@ -83,6 +83,7 @@ public abstract class Gesture
     GestureRecognitionState state = GestureRecognitionState.Ready;
     GestureRecognitionState prevState = GestureRecognitionState.Ready;
     FingerGestures.FingerList fingers = new FingerGestures.FingerList();
+	bool longPressBool = false;
 
     /// <summary>
     /// Convenience operator - so you can go if( !gesture ) instead of if( gesture == null ) 
@@ -134,7 +135,7 @@ public abstract class Gesture
     public Vector2 Position
     {
         get { return position; }
-        internal set { position = value; }
+        set { position = value; }
     }
 
     /// <summary>
@@ -171,6 +172,14 @@ public abstract class Gesture
     {
         get { return Time.time - StartTime; }
     }
+
+
+	/// 
+	/// 
+	public bool LongPressAfterSwipe {
+		get { return longPressBool; }
+		set { longPressBool = value; }
+	}
 
     #region Object Picking / Raycasting
 
@@ -360,6 +369,7 @@ public abstract class GestureRecognizerTS<T> : GestureRecognizer where T : Gestu
 
         gesture.ClusterId = 0;
         gesture.Fingers.Clear();
+		gesture.LongPressAfterSwipe = false;
         gesture.State = GestureRecognitionState.Ready;
     }
 

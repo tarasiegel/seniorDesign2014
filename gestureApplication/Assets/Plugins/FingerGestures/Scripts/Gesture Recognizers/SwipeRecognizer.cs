@@ -9,6 +9,8 @@ public class SwipeGesture : DiscreteGesture
     FingerGestures.SwipeDirection direction = FingerGestures.SwipeDirection.None;
 
     internal int MoveCounter = 0;
+	internal Vector2 PreviousPosition = new Vector2 ();
+	internal int LongPressIndicator = 0;
     internal float Deviation = 0; // current total angular deviation on swipe direction
     
     /// <summary>
@@ -105,9 +107,12 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
         gesture.StartPosition = touches.GetAverageStartPosition();
         gesture.Position = touches.GetAveragePosition();
         gesture.Move = Vector3.zero;
+		gesture.PreviousPosition = gesture.StartPosition;
         gesture.MoveCounter = 0;
+		gesture.LongPressIndicator = 0;
         gesture.Deviation = 0;
         gesture.Direction = FingerGestures.SwipeDirection.None;
+		gesture.LongPressAfterSwipe = false;
 
         //Debug.Log( "BeginSwipe: " + EventMessageName + " touches.Count=" + FingerGestures.Touches.Count );
     }
@@ -120,8 +125,8 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
         if( touches.Count != RequiredFingerCount )
         {
             // more fingers were added - fail right away
-            if( touches.Count > RequiredFingerCount )
-                return GestureRecognitionState.Failed;
+            //if( touches.Count > RequiredFingerCount )
+            //    return GestureRecognitionState.Failed;
 
             //
             // fingers were lifted-off
@@ -154,7 +159,7 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
             gesture.Velocity = distance / gesture.ElapsedTime;
         else
             gesture.Velocity = 0;
-        
+
         // we're going too slow
         if( gesture.MoveCounter > 2 && gesture.Velocity < ToPixels( MinVelocity ) )
         {
@@ -174,7 +179,15 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
                 return GestureRecognitionState.Failed;
             }
         }
-
+		float positionDiviation = Mathf.Sqrt (Mathf.Pow (gesture.PreviousPosition.x - gesture.Position.x, 2) + Mathf.Pow (gesture.PreviousPosition.y - gesture.Position.y, 2));
+		if (Mathf.Abs(positionDiviation) < 1.00f) {
+			if (gesture.LongPressIndicator == 8){
+				Debug.Log("LongPress recognized after swipe");
+				gesture.LongPressAfterSwipe = true;
+			}
+			++gesture.LongPressIndicator;
+		}
+		gesture.PreviousPosition = gesture.Position;
         ++gesture.MoveCounter;
         return GestureRecognitionState.InProgress;
     }

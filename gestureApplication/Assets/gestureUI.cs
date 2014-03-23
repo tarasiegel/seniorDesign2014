@@ -17,7 +17,7 @@ public class gestureUI : MonoBehaviour {
 		void Awake()
 		{
 			statusStyle = new GUIStyle( skin.label );
-			statusStyle.alignment = TextAnchor.LowerCenter;
+			statusStyle.alignment = TextAnchor.MiddleCenter;
 		}
 		
 		#region Virtual Screen for automatic UI resolution scaling
@@ -41,6 +41,6 @@ public class gestureUI : MonoBehaviour {
 			ApplyVirtualScreen();
 			
 			if( showStatusText )
-				GUI.Label( statusTextRect, statusText, statusStyle );
+				GUI.Label(statusTextRect, statusText, statusStyle);
 		}
 	}

@@ -4,7 +4,12 @@ using System.Collections;
 [System.Serializable]
 public class LongPressGesture : DiscreteGesture
 {
-    // nothing for now!
+	/*public string RecognizerName = "longPressRecgonizer";
+	public Vector2 pos;
+	public Vector2 Position {
+		get { return pos; }
+		set { pos = value;}
+	}*/
 }
 
 /// <summary>
@@ -16,7 +21,7 @@ public class LongPressRecognizer : DiscreteGestureRecognizer<LongPressGesture>
     /// <summary>
     /// How long the finger must stay down without moving in order to validate the gesture
     /// </summary>
-    public float Duration = 1.0f;
+    public float Duration = 0.5f;
 
     /// <summary>
     /// How far the finger is allowed to move around its starting position without breaking the gesture
