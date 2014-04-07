@@ -4,8 +4,8 @@ using System.Collections;
 [System.Serializable]
 public class SwipeGesture : DiscreteGesture
 {
-    Vector2 move = Vector2.zero;
-    float velocity = 0;
+    private Vector2 move = Vector2.zero;
+    private float velocity = 0;
     FingerGestures.SwipeDirection direction = FingerGestures.SwipeDirection.None;
 
     internal int MoveCounter = 0;
@@ -37,7 +37,7 @@ public class SwipeGesture : DiscreteGesture
     public FingerGestures.SwipeDirection Direction
     {
         get { return direction; }
-        internal set { direction = value; }
+        set { direction = value; }
     }
 }
 
@@ -180,10 +180,11 @@ public class SwipeRecognizer : DiscreteGestureRecognizer<SwipeGesture>
             }
         }
 		float positionDiviation = Mathf.Sqrt (Mathf.Pow (gesture.PreviousPosition.x - gesture.Position.x, 2) + Mathf.Pow (gesture.PreviousPosition.y - gesture.Position.y, 2));
-		if (Mathf.Abs(positionDiviation) < 1.00f) {
-			if (gesture.LongPressIndicator == 8){
+		if (Mathf.Abs(positionDiviation) < 0.90f) {
+			if (gesture.LongPressIndicator == 10){
 				Debug.Log("LongPress recognized after swipe");
 				gesture.LongPressAfterSwipe = true;
+				gesture.Direction = gesture.Direction;
 			}
 			++gesture.LongPressIndicator;
 		}
