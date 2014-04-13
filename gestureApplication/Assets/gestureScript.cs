@@ -200,7 +200,7 @@ public class gestureScript : gestureBase {
 			char letter = charMap.getCharacter (g);
 			if (letter == '<') {
 				gestureSequence.RemoveAt (gestureSequence.Count - 1);
-			} 
+			}
 			else {
 				g.Letter = letter;
 				gestureSequence.Add (g);
