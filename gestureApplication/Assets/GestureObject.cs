@@ -5,11 +5,13 @@ using System.Collections.Generic;
 public class GestureObject {
 
 	int finger = 0;
+	int previousFinger = 0;
 	DiscreteGesture gesture1 = null;
 	DiscreteGesture gesture2 = null;
 	FingerGestures.SwipeDirection gestureDirection1;
 	FingerGestures.SwipeDirection gestureDirection2;
 	char letter;
+	bool addedYet;
 	
 	
 	public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2) {
@@ -72,6 +74,14 @@ public class GestureObject {
 	}
 
 	/// <summary>
+	/// Previous finger position 
+	/// </summary>
+	public int PreviousFinger {
+		get { return previousFinger; }
+		set { previousFinger = value; }
+	}
+
+	/// <summary>
 	/// Letter associated with the overall gesture. Set after gesture is finished
 	/// </summary>
 	public char Letter {
@@ -93,6 +103,20 @@ public class GestureObject {
 	public FingerGestures.SwipeDirection Direction2 {
 		get { return gestureDirection2; }
 		internal set { gestureDirection2 = value; }
+	}
+
+	public bool hasSecondGesture() {
+		if (gesture2 != null) {
+			return true;
+		}
+		else { 
+			return false; 
+		}
+	}
+
+	public bool HasBeenAddedYet {
+		get { return addedYet; }
+		set { addedYet = value; }
 	}
 		
 	// Use this for initialization

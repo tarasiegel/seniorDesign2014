@@ -1,6 +1,9 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+
+
 
 [RequireComponent( typeof( FingerDownDetector ) )]
 [RequireComponent( typeof( FingerMotionDetector ) )]
@@ -17,78 +20,22 @@ public class gestureScript : gestureBase {
 	public GameObject emitter;
 	public string currentString;
 
-	class PathRenderer {
-		LineRenderer lineRenderer;
-		
-		// passage points
-		List<Vector3> points = new List<Vector3>();
-		
-		// list of marker objects currently instantiated
-		List<GameObject> markers = new List<GameObject>();
-		
-		public PathRenderer( int index, LineRenderer lineRendererPrefab ) {
-			lineRenderer = Instantiate( lineRendererPrefab ) as LineRenderer;
-			lineRenderer.name = lineRendererPrefab.name + index;
-			lineRenderer.enabled = true;	
-			UpdateLines();
-		}
-
-		public void Reset() {
-			points.Clear();
-			UpdateLines();
-			foreach (GameObject marker in markers) {
-				Destroy (marker);
-			}
-			markers.Clear();
-		}
-		
-		public void AddPoint( Vector2 screenPos ) {
-			AddPoint( screenPos, null );
-		}
-		
-		public void AddPoint( Vector2 screenPos, GameObject markerPrefab ) {
-			Vector3 pos = gestureBase.GetWorldPos (screenPos);
-
-			if( markerPrefab )
-				AddMarker( pos, markerPrefab );
-
-			points.Add( pos );
-			UpdateLines();
-		}
-		
-		GameObject AddMarker( Vector2 pos, GameObject prefab ) {
-			GameObject instance = Instantiate( prefab, pos, Quaternion.identity ) as GameObject;
-			instance.name = prefab.name + "(" + markers.Count + ")";
-			markers.Add( instance );
-			return instance;
-		}
-		
-		void UpdateLines() {
-			lineRenderer.SetVertexCount( points.Count );
-			for( int i = 0; i < points.Count; ++i )
-				lineRenderer.SetPosition( i, points[i] );
-		}
-	}
-
-	PathRenderer[] paths;
-
 	class GestureTracker {
-		//List<TapGesture> listOfTapGestures = new List<TapGesture>();
-		//List<SwipeGesture> listOfSwipeGestures = new List<SwipeGesture>();
-		//List<LongPressGesture> listOfPressGestures = new List<LongPressGesture>();
-		//List<PathRenderer> listOfPaths = new List<PathRenderer>();
-		//List<string> sequentialGestures = new List<string>();
+
 		GestureObject[] gestureQueue = new GestureObject[5];
 		List<GestureObject> gestureSequence = new List<GestureObject>();
 		characterMap charMap;
 		int lastFinger = 0;
+		int lastLastFinger = 0;
+		bool justSawBackspace = false;
 
 
 		public GestureTracker() {
-			FingerMapObject one = new FingerMapObject('t', 'd', ' ', 'o', 'f', 'm', 's');
+	     //FingerMapObject sam = new FingerMapObject('L', 'R', 'LP', 'RP', 'PL', 'PR', 'T')
+			FingerMapObject one = new FingerMapObject('t', 'd', 'v', 'o', 'f', 'm', 's');
 			FingerMapObject two = new FingerMapObject('y', 'n', 'w', 'j', 'i', 'c', 'r');
 			FingerMapObject three = new FingerMapObject('h', 'a', 'q', 'b', 'l', 'u', 'e');
-			FingerMapObject four = new FingerMapObject('<', 'g', 'z', 'x', 'p', 'k', 'v');
+			FingerMapObject four = new FingerMapObject('g', '<', 'z', 'x', 'p', 'k', ' ');
 			charMap = new characterMap(one, two, three, four);
 		}
 		//dont let them go farther until get the key correct but log the amount of times get wrong
@@ -131,34 +78,40 @@ public class gestureScript : gestureBase {
 		public void updateList(TapGesture tap) {
 			addGesture(tap); //this is adding the previous tap to the gesture object
 			//listOfTapGestures.Add (tap);
+			lastLastFinger = lastFinger;
 			lastFinger = determineFinger (tap);
+			Debug.Log (lastFinger);
 		}
-
-		/*public void updateList(PathRenderer path) {
-			listOfPaths.Add (path);
-		}*/
 
 		public void updateList(LongPressGesture press) {
 			addGesture (press);
-			//listOfPressGestures.Add (press);
+			lastLastFinger = lastFinger;
 			lastFinger = determineFinger (press);
-
+			Debug.Log (lastFinger);
 		}
 
 		public void updateList(SwipeGesture swipe) {
 			addGesture (swipe, swipe.Direction);
+			lastLastFinger = lastFinger;
 			lastFinger = determineFinger (swipe);
-			//listOfSwipeGestures.Add (swipe);
-
+			Debug.Log (lastFinger);
 		}
+
 
 		private int determineFinger(DiscreteGesture type) {
 			Vector2 currPos = type.StartPosition;
 			float w = Screen.width;
 			float h = Screen.height;
-			/*if (currPos.y <= h / 2.0f) {
-								return 2;
+			/*Debug.Log (justSawBackspace);
+			if (justSawBackspace) {
+				if (gestureSequence.Count == 0) {
+					return 0;
+				}
+				else {
+					return lastFinger;
+				}
 			}*/
+
 			if (currPos.x <= w / 2.0f && currPos.y <= h / 2.0f) {
 					return  2;
 			} else if (currPos.x <= w / 2.0f && currPos.y >= h / 2.0f) {
@@ -173,43 +126,90 @@ public class gestureScript : gestureBase {
 		}
 
 		private void checkOtherFingerGestures(GestureObject g){
-			GestureObject currG;
-			float gTime = g.Gesture1.StartTime;
-			/*if (g.Finger != lastFinger && lastFinger != 0) {
-				currG = gestureQueue[lastFinger];
-				float t = currG.Gesture1.StartTime + currG.Gesture1.ElapsedTime;*/
+			GestureObject lastG;
+			//float lastTime = g.Gesture1.StartTime;
+			if (gestureSequence.Count == 0) {
+				Debug.Log ("all are deleted");
+				addToGestureSequence (g);
+			} 
+			else {
+				Debug.Log ("last finger: " + lastFinger + ", current finger: " + g.Finger);
+				if (g.Finger != lastFinger && lastFinger != 0) {
+					lastG = gestureQueue [lastFinger];
+					if (lastG != null) {
+						float lastT = 0;
+						float currT = 0;
+						if (!lastG.hasSecondGesture ()) {
+							lastT = lastG.Gesture1.StartTime + lastG.Gesture1.ElapsedTime;
+						} 
+						else {
+							lastT = lastG.Gesture2.StartTime + lastG.Gesture2.ElapsedTime;
+						}
+
+						if (!g.hasSecondGesture ()) {
+							currT = g.Gesture1.StartTime;
+						} 
+						else {
+							currT = g.Gesture2.StartTime;
+						}
+
+						if (Mathf.Abs (currT - lastT) > 0.05f) {
+							//gestureQueue [lastFinger] = null;
+							addToGestureSequence (lastG);
+						}
+					}
+				} //else if (lastFinger == 0) {
+					//	addToGestureSequence (g);
+				//}
+						}
+		}
+
+
 				//if (currG.Gesture2 == null && t < gTime) {
 					//gestureQueue[lastFinger] = null;
 					//addToGestureSequence (currG);
 				//}
 				
 			//}
-			for (int i = 0; i < gestureQueue.Length; i++) {
-				if (g.Finger != i && gestureQueue[i] != null) {
-					currG = gestureQueue[i];
-					float t = currG.Gesture1.StartTime + currG.Gesture1.ElapsedTime;
-					if (currG.Gesture2 == null && t < gTime) {
-						gestureQueue[i] = null;
-						addToGestureSequence (currG);
-					}
-				}
-			}
-		}
+//			for (int i = 0; i < gestureQueue.Length; i++) {
+//				if (g.Finger != i && gestureQueue[i] != null) {
+//					currG = gestureQueue[i];
+//					float t = currG.Gesture1.StartTime + currG.Gesture1.ElapsedTime;
+//					if (currG.Gesture2 == null && t < gTime) {
+//						gestureQueue[i] = null;
+//						addToGestureSequence (currG);
+//					}
+//				}
+//			}
+//		}
 		
 		private void addToGestureSequence(GestureObject g){
 			char letter = charMap.getCharacter (g);
 			if (letter == '<') {
-				gestureSequence.RemoveAt (gestureSequence.Count - 1);
+				if (gestureSequence.Count == 1){
+					gestureSequence.Clear();
+					justSawBackspace = true;
+				}
+				else if (gestureSequence.Count != 0){
+					gestureSequence.RemoveAt (gestureSequence.Count - 1);
+					justSawBackspace = true;
+				}
+				else {
+				}
+
 			}
-			else {
+			else if (!g.HasBeenAddedYet){
+				justSawBackspace = false;
 				g.Letter = letter;
 				gestureSequence.Add (g);
+				gestureQueue[g.Finger].HasBeenAddedYet = true;
 			}
 		}
 
 		private void addGesture(DiscreteGesture type, FingerGestures.SwipeDirection dir = FingerGestures.SwipeDirection.Left) {
 			bool gestureStarted = false;
 			int finger = determineFinger (type);
+			Debug.Log ("Adding Gesture, finger: " + finger);
 			for (int i = 0; i < gestureQueue.Length; i++) {
 				if (gestureQueue[i] != null){
 					if(gestureQueue[i].Finger == finger) {
@@ -220,24 +220,30 @@ public class gestureScript : gestureBase {
 			if (gestureStarted == true){     
 				DiscreteGesture firstGesture = gestureQueue[finger].Gesture1;
 				if ((firstGesture.Recognizer == type.Recognizer || type.ToString() == "TapGesture" || firstGesture.ToString() == "TapGesture")) {
+					Debug.Log ("saw tap or same gesture right before");
 					//seen same gesture as before
 					GestureObject g = gestureQueue[finger];
 					checkOtherFingerGestures(g);
 					addToGestureSequence(g);
 					//just in case it is a swipe --> press
 					if (type.ToString() == "SwipeGesture" && type.LongPressAfterSwipe == true){
+						Debug.Log ("getting into longpress + swipe");
 						LongPressGesture l = new LongPressGesture();
 						l.Position = type.Position;
 						GestureObject newg = new GestureObject(finger, type, l);
 						newg.Direction1 = dir;
-						gestureQueue[finger] = null;
+						newg.PreviousFinger = lastFinger;
+						//gestureQueue[finger] = null;
 						checkOtherFingerGestures(newg);
 						addToGestureSequence(newg);
 					}
 					//else override it as the gesture for that 
 					else {
+						Debug.Log("adding 2nd gesture, direction= " + dir);
 						GestureObject newg2 = new GestureObject(finger, type);
+						newg2.PreviousFinger = lastFinger;
 						if (type.ToString() == "SwipeGesture"){
+							Debug.Log(dir);
 							newg2.Direction1 = dir;
 						}
 						gestureQueue[finger] = newg2;
@@ -257,6 +263,7 @@ public class gestureScript : gestureBase {
 
 					if (Mathf.Abs (time - type.StartTime) <= 10.0f && distance <= 3.0f) {
 						//recognized long press --> swipe, adding swipe as the second part of gesture
+						Debug.Log("swipe + longpress");
 						gestureQueue[finger].Gesture2 = type;
 						gestureQueue[finger].Direction2 = dir;
 						checkOtherFingerGestures(gestureQueue[finger]);
@@ -268,6 +275,7 @@ public class gestureScript : gestureBase {
 						GestureObject g = gestureQueue[finger];
 						addToGestureSequence(g);
 						GestureObject newg = new GestureObject(finger, type);
+						newg.PreviousFinger = lastFinger;
 						if (type.ToString() == "SwipeGesture") {
 							newg.Direction1 = dir;
 						}
@@ -278,48 +286,55 @@ public class gestureScript : gestureBase {
 				}
 			//first gesture of that finger
 			else {
+				Debug.Log("first gesture for finger");
 				if (type.ToString() == "SwipeGesture") {
 					if (type.LongPressAfterSwipe == true){
 						LongPressGesture l = new LongPressGesture();
 						l.Position = type.Position;
-						GestureObject newg = new GestureObject(finger, type, l);
-						newg.Direction1 = dir;
-						//gestureQueue[finger] = newg;
-						checkOtherFingerGestures(newg);
-						addToGestureSequence(newg);
+						GestureObject g = addGestureWithDirection1(finger, type, dir);
+						//checkOtherFingerGestures(g);
 					}
 					else {
-						GestureObject gesture = new GestureObject (finger, type);
-						gesture.Direction1 = dir;
-						gestureQueue[finger] = gesture;
-						checkOtherFingerGestures(gesture);
+						GestureObject g = addGestureWithDirection1(finger, type, dir);
 					}
 				}
 				else {
-					GestureObject gesture = new GestureObject (finger, type);
-					gestureQueue[finger] = gesture;
-					checkOtherFingerGestures(gesture);
+					GestureObject g = addGestureTap(finger, type);
+					//checkOtherFingerGestures(g);
 				}
 			}
 			//return gestureQueue;
 		}
+
+
+		GestureObject addGestureWithDirection1(int finger, DiscreteGesture type, FingerGestures.SwipeDirection dir = FingerGestures.SwipeDirection.Left){
+			GestureObject gesture = new GestureObject (finger, type);
+			gesture.Direction1 = dir;
+			gesture.PreviousFinger = lastFinger;
+			gestureQueue[finger] = gesture;
+			checkOtherFingerGestures(gesture);
+			return gesture;
+		}
+		GestureObject addGestureTap(int finger, DiscreteGesture type){
+			GestureObject gesture = new GestureObject (finger, type);
+			gesture.PreviousFinger = lastFinger;
+			gestureQueue[finger] = gesture;
+			checkOtherFingerGestures(gesture);
+			return gesture;
+		}
 	
 	}
 	GestureTracker gestureTracker = new GestureTracker();
-
+	
 	// Use this for initialization
-	void Start () {
-
-	}
+	//void Start () {
+	//}
 
 
 	// Update is called once per frame
 	void Update () {
 		base.Start();
-		paths = new PathRenderer[FingerGestures.Instance.MaxFingers];
-		for (int i = 0; i < paths.Length; ++i) {
-			paths [i] = new PathRenderer (i, lineRendererPrefab);
-		}
+
 	}
 
 
@@ -331,67 +346,20 @@ public class gestureScript : gestureBase {
 		//FingerGestures.SwipeDirection direction = gesture.Direction;
 		//UI.StatusText = "Swiped " + direction + " with finger " + gesture.Fingers[0];
 		gestureTracker.updateList (gesture);
-		UI.StatusText = gestureTracker.printOutCurrentPath();
-		
+		UI.StatusText = gestureTracker.printOutCurrentPath();	
 	}
 	
 	void OnLongPress(LongPressGesture gesture) {
 		//UI.StatusText = "Long Press with finger " + gesture.Fingers[0] + " at: " + gesture.Position;
 		//SpawnParticles (gesture);
 		gestureTracker.updateList (gesture);
-		UI.StatusText = gestureTracker.printOutCurrentPath();}
-
-
-
-
-//NOT CURRENTLY BEING USED METHODS
+		UI.StatusText = gestureTracker.printOutCurrentPath();
+	}
 
 	void OnTap( TapGesture gesture ) {
 		//UI.StatusText = "Tapped with finger " + gesture.Fingers[0] + " at: " + gesture.Position;
 		gestureTracker.updateList (gesture);
-		UI.StatusText = gestureTracker.printOutCurrentPath();}
+		UI.StatusText = gestureTracker.printOutCurrentPath();
+	}
 
-	/*void SpawnParticles(LongPressGesture obj) {
-		//ParticleSystem.Particle particle = new ParticleSystem.Particle ();
-		//emitter.transform.position = obj.Position;
-		//particle.position = obj.Position;
-		//emitter.Emit (particle);
-		//emitter.particleSystem.Play ();
-		Vector3 pos = new Vector3 (obj.Position.x, obj.Position.y);
-		GameObject emit = Instantiate (emitter, pos, Quaternion.identity) as GameObject;
-		ParticleSystem p = emit.GetComponent<ParticleSystem> ();
-		//p.Play ();
-	}*/
-	
-	void OnFingerDown( FingerDownEvent e ) {
-		PathRenderer path = paths[e.Finger.Index];
-		path.Reset();
-		path.AddPoint( e.Finger.Position, fingerDownMarkerPrefab );
-	}
-	
-	/*void OnFingerMove( FingerMotionEvent e ) {
-		PathRenderer path = paths[e.Finger.Index];
-		
-		if( e.Phase == FingerMotionPhase.Started )
-		{
-			UI.StatusText = "Started moving " + e.Finger;
-			path.AddPoint( e.Position, fingerMoveBeginMarkerPrefab );
-		}
-		else if( e.Phase == FingerMotionPhase.Updated )
-		{
-			path.AddPoint( e.Position );
-		}
-		else
-		{
-			UI.StatusText = "Stopped moving " + e.Finger;
-			path.AddPoint( e.Position, fingerMoveEndMarkerPrefab );
-		}
-	}*/
-	
-	void OnFingerUp( FingerUpEvent e ) {
-		PathRenderer path = paths[e.Finger.Index];
-		path.AddPoint( e.Finger.Position, fingerUpMarkerPrefab );
-		UI.StatusText = "Finger " + e.Finger + " was held down for " + e.TimeHeldDown.ToString( "N2" ) + " seconds";
-		//gestureTracker.updateList (path);
-	}
 }
