@@ -12,15 +12,17 @@ public class GestureObject {
 	FingerGestures.SwipeDirection gestureDirection2;
 	char letter;
 	bool addedYet;
+	int type = 0;
 	
 	
-	public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2) {
+	public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2, int type) {
 		this.finger = finger;
 		this.gesture1 = gesture1;
 		this.gesture2 = gesture2;
+		this.type = type;
 	}
 
-	public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2, FingerGestures.SwipeDirection dir) {
+	public GestureObject( int finger, DiscreteGesture gesture1, DiscreteGesture gesture2, FingerGestures.SwipeDirection dir, int type) {
 		this.finger = finger;
 		this.gesture1 = gesture1;
 		this.gesture2 = gesture2;
@@ -30,23 +32,26 @@ public class GestureObject {
 		if (gesture2.ToString() == "SwipeGesture") {
 			this.Direction2 = dir;
 		}
+		this.type = type;
 	}
 	
 	public GestureObject(int finger) {
 		this.finger = finger;
 	}
 	
-	public GestureObject(int finger, DiscreteGesture gesture1) {
+	public GestureObject(int finger, DiscreteGesture gesture1, int type) {
 		this.finger = finger;
 		this.gesture1 = gesture1;
 		this.gesture2 = null;
+		this.type = type;
 	}
 
-	public GestureObject(int finger, DiscreteGesture gesture1, FingerGestures.SwipeDirection dir) {
+	public GestureObject(int finger, DiscreteGesture gesture1, FingerGestures.SwipeDirection dir, int type) {
 		this.finger = finger;
 		this.gesture1 = gesture1;
 		this.gesture2 = null;
 		this.Direction1 = dir;
+		this.type = type;
 	}
 	
 	/// <summary>
@@ -103,6 +108,14 @@ public class GestureObject {
 	public FingerGestures.SwipeDirection Direction2 {
 		get { return gestureDirection2; }
 		internal set { gestureDirection2 = value; }
+	}
+
+	/// <summary>
+	/// Type of gesture
+	/// </summary>
+	public int Type {
+		get { return type; }
+		internal set { type = value; }
 	}
 
 	public bool hasSecondGesture() {

@@ -27,7 +27,7 @@ public class gestureScript : gestureBase {
 		characterMap charMap;
 		int lastFinger = 0;
 		int lastLastFinger = 0;
-		bool justSawBackspace = false;
+		//bool justSawBackspace = false;
 
 
 		public GestureTracker() {
@@ -188,18 +188,18 @@ public class gestureScript : gestureBase {
 			if (letter == '<') {
 				if (gestureSequence.Count == 1){
 					gestureSequence.Clear();
-					justSawBackspace = true;
+					//justSawBackspace = true;
 				}
 				else if (gestureSequence.Count != 0){
 					gestureSequence.RemoveAt (gestureSequence.Count - 1);
-					justSawBackspace = true;
+					//justSawBackspace = true;
 				}
 				else {
 				}
 
 			}
 			else if (!g.HasBeenAddedYet){
-				justSawBackspace = false;
+				//justSawBackspace = false;
 				g.Letter = letter;
 				gestureSequence.Add (g);
 				gestureQueue[g.Finger].HasBeenAddedYet = true;
@@ -230,7 +230,7 @@ public class gestureScript : gestureBase {
 						Debug.Log ("getting into longpress + swipe");
 						LongPressGesture l = new LongPressGesture();
 						l.Position = type.Position;
-						GestureObject newg = new GestureObject(finger, type, l);
+						GestureObject newg = new GestureObject(finger, type, l, 1);
 						newg.Direction1 = dir;
 						newg.PreviousFinger = lastFinger;
 						//gestureQueue[finger] = null;
@@ -240,7 +240,7 @@ public class gestureScript : gestureBase {
 					//else override it as the gesture for that 
 					else {
 						Debug.Log("adding 2nd gesture, direction= " + dir);
-						GestureObject newg2 = new GestureObject(finger, type);
+						GestureObject newg2 = new GestureObject(finger, type, 0);
 						newg2.PreviousFinger = lastFinger;
 						if (type.ToString() == "SwipeGesture"){
 							Debug.Log(dir);
@@ -274,7 +274,7 @@ public class gestureScript : gestureBase {
 						//create a new gesture
 						GestureObject g = gestureQueue[finger];
 						addToGestureSequence(g);
-						GestureObject newg = new GestureObject(finger, type);
+						GestureObject newg = new GestureObject(finger, type, 0);
 						newg.PreviousFinger = lastFinger;
 						if (type.ToString() == "SwipeGesture") {
 							newg.Direction1 = dir;
@@ -291,15 +291,15 @@ public class gestureScript : gestureBase {
 					if (type.LongPressAfterSwipe == true){
 						LongPressGesture l = new LongPressGesture();
 						l.Position = type.Position;
-						GestureObject g = addGestureWithDirection1(finger, type, dir);
+						addGestureWithDirection1(finger, type, dir);
 						//checkOtherFingerGestures(g);
 					}
 					else {
-						GestureObject g = addGestureWithDirection1(finger, type, dir);
+						addGestureWithDirection1(finger, type, dir);
 					}
 				}
 				else {
-					GestureObject g = addGestureTap(finger, type);
+					addGestureTap(finger, type);
 					//checkOtherFingerGestures(g);
 				}
 			}
@@ -307,20 +307,18 @@ public class gestureScript : gestureBase {
 		}
 
 
-		GestureObject addGestureWithDirection1(int finger, DiscreteGesture type, FingerGestures.SwipeDirection dir = FingerGestures.SwipeDirection.Left){
-			GestureObject gesture = new GestureObject (finger, type);
+		void addGestureWithDirection1(int finger, DiscreteGesture type, FingerGestures.SwipeDirection dir = FingerGestures.SwipeDirection.Left){
+			GestureObject gesture = new GestureObject (finger, type, 0);
 			gesture.Direction1 = dir;
 			gesture.PreviousFinger = lastFinger;
 			gestureQueue[finger] = gesture;
 			checkOtherFingerGestures(gesture);
-			return gesture;
 		}
-		GestureObject addGestureTap(int finger, DiscreteGesture type){
-			GestureObject gesture = new GestureObject (finger, type);
+		void addGestureTap(int finger, DiscreteGesture type){
+			GestureObject gesture = new GestureObject (finger, type, 7);
 			gesture.PreviousFinger = lastFinger;
 			gestureQueue[finger] = gesture;
 			checkOtherFingerGestures(gesture);
-			return gesture;
 		}
 	
 	}

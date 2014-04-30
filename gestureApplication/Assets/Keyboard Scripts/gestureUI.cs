@@ -5,23 +5,16 @@ public class gestureUI : MonoBehaviour {
 		public GUISkin skin;
 		GUIStyle statusStyle;
 		Rect statusTextRect = new Rect( 30, 336, 540, 80 );
-		string statusText = "";//"status text goes here";
-		//GUIStyle textStyle;
-		//Rect sententceTextRect = new Rect (30, 400, 300, 60);
-		//string sentenceText = "";
+		Rect backButtonRect = new Rect( 5, 2, 60, 35 );
+		string statusText = "";
+		
 		public string StatusText
 		{
 			get { return statusText; }
 			set { statusText = value; }
 		}
-		//public string SentenceText
-		//{
-		//	get { return sentenceText; }
-		//	set { sentenceText = value; }
-		//}
-		
+
 		public bool showStatusText = true;
-		//public bool showSentenceText = true;
 		
 		void Awake()
 		{
@@ -29,8 +22,6 @@ public class gestureUI : MonoBehaviour {
 			statusStyle.alignment = TextAnchor.UpperCenter;
 			statusStyle.fontSize = 18;
 
-			//textStyle = new GUIStyle (skin.label);
-			//textStyle.alignment = TextAnchor.UpperCenter;
 		}
 		
 
@@ -53,10 +44,10 @@ public class gestureUI : MonoBehaviour {
 				GUI.skin = skin;
 			
 			ApplyVirtualScreen();
+			if( GUI.Button( backButtonRect, "Back" ) )
+				Application.LoadLevel( 0 );
 			
 			if( showStatusText )
 				GUI.Label(statusTextRect, statusText, statusStyle);
-			//if( showSentenceText )
-			//	GUI.Label(sententceTextRect, sentenceText, textStyle);
 		}
 	}

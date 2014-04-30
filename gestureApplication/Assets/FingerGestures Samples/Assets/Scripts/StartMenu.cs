@@ -6,7 +6,7 @@ public class StartMenu : MonoBehaviour
     public GUIStyle titleStyle;
     public GUIStyle buttonStyle;
 
-    public float buttonHeight = 80;
+    public float buttonHeight = 200;
 
     public Transform itemsTree;
 
@@ -48,7 +48,7 @@ public class StartMenu : MonoBehaviour
             {
                 Transform item = CurrentMenuRoot.GetChild( i );
 
-                if( GUILayout.Button( item.name, GUILayout.Height( buttonHeight ) ) )
+                if( GUILayout.Button( item.name, GUILayout.Height(buttonHeight) ) )
                 {
                     MenuNode menuNode = item.GetComponent<MenuNode>();
                     if( menuNode && menuNode.sceneName != null && menuNode.sceneName.Length > 0 )
@@ -57,7 +57,7 @@ public class StartMenu : MonoBehaviour
                         CurrentMenuRoot = item;
                 }
 
-                GUILayout.Space( 5 );
+                GUILayout.Space( 20 );
             }            
 
             GUILayout.FlexibleSpace();
